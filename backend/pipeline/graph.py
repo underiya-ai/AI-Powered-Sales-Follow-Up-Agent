@@ -6,6 +6,7 @@ from backend.Agents.conversation_intelligence import conversation_intelligence
 from backend.Agents.lead_scoring_agent import lead_scoring_agent
 from backend.Agents.next_best_action_agent import next_best_action_agent
 from backend.Agents.followup_agent import follow_up_agent
+from backend.Agents.email_agent import email_agent
 
 
 def create_sales_graph():
@@ -17,6 +18,7 @@ def create_sales_graph():
     graph.add_node("lead_scoring",lead_scoring_agent)
     graph.add_node("next_action_agent",next_best_action_agent)
     graph.add_node("follow_up_agent",follow_up_agent)
+    graph.add_node("email_agent",email_agent)
 
     # Agents will be added here
     # graph.add_node("conversation_intelligence", ...)
@@ -31,7 +33,8 @@ def create_sales_graph():
     graph.add_edge("conversation_intelligence","lead_scoring")
     graph.add_edge("lead_scoring","next_action_agent")
     graph.add_edge("next_action_agent","follow_up_agent")
-    graph.add_edge("follow_up_agent",END)
+    graph.add_edge("follow_up_agent","email_agent")
+    graph.add_edge("email_agent",END)
 
     return graph.compile()
 

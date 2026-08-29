@@ -132,5 +132,13 @@ async def transcribe_call(
         "next_best_action"
     ),
 
+    "follow_up": result.get(
+        "follow_up"
+    ),
+
+    "email": result.get(
+    "email"
+    ),
+
     "created_at": conversation.created_at
 }

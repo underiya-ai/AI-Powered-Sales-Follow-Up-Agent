@@ -1,6 +1,9 @@
 from typing import TypedDict, Optional
 
 
+from typing import TypedDict, Optional
+
+
 class SalesState(TypedDict, total=False):
 
     # Conversation
@@ -9,18 +12,13 @@ class SalesState(TypedDict, total=False):
     filename: str
     transcript: str
 
-    # Sales Orchestrator
-    sales_goal: str
-    pipeline_status: str
-    orchestration_decision: Optional[dict]
-
     # Conversation Intelligence
     conversation_analysis: Optional[dict]
 
     # Lead Scoring
     lead_score: Optional[int]
     lead_priority: Optional[str]
-    lead_score_reason: Optional[str]
+    lead_scoring_reason: Optional[str]
 
     # Next Best Action
     next_best_action: Optional[dict]
@@ -30,3 +28,10 @@ class SalesState(TypedDict, total=False):
 
     # Email
     email: Optional[dict]
+
+    # Human Approval
+    human_approval: Optional[dict]
+
+    # Pipeline
+    sales_goal: Optional[str]
+    pipeline_status: Optional[str]
