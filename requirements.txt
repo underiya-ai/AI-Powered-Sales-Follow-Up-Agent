@@ -1,0 +1,15 @@
+uvicorn 
+langgraph
+python-dotenv
+langchain-groq
+langchain-community
+langchain-core
+requests 
+aiofiles
+python-multipart
+fastapi
+langchain
+langchain-google-genai
+langchain-groq
+faster-whisper
+sqlalchemy
