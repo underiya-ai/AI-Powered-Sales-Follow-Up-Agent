@@ -2,24 +2,31 @@ from typing import TypedDict, Optional
 
 
 class SalesState(TypedDict, total=False):
-    # Conversation information
+
+    # Conversation
     conversation_id: int
     conversation_type: str
     filename: str
     transcript: str
 
-    # Conversation Intelligence Agent
+    # Sales Orchestrator
+    sales_goal: str
+    pipeline_status: str
+    orchestration_decision: Optional[dict]
+
+    # Conversation Intelligence
     conversation_analysis: Optional[dict]
 
-    # Lead Scoring Agent
+    # Lead Scoring
     lead_score: Optional[int]
     lead_priority: Optional[str]
+    lead_score_reason: Optional[str]
 
-    # Next Best Action Agent
+    # Next Best Action
     next_best_action: Optional[dict]
 
-    # Follow-Up Agent
+    # Follow-Up
     follow_up: Optional[dict]
 
-    # Email Agent
+    # Email
     email: Optional[dict]

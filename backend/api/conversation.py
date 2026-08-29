@@ -1,9 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
-from fastapi import Depends
 
 from backend.service.transcription import transcribe_audio
 from backend.service.database import SessionLocal, Conversation
+from backend.pipeline.graph import sales_graph
 
 
 router = APIRouter(
@@ -50,7 +50,10 @@ async def transcribe_call(
             detail="Unsupported audio format"
         )
 
-    # Convert audio to text
+    # --------------------------------------------------
+    # 1. Speech-to-Text
+    # --------------------------------------------------
+
     transcript = await transcribe_audio(file)
 
     if not transcript:
@@ -59,7 +62,10 @@ async def transcribe_call(
             detail="Could not generate transcript"
         )
 
-    #  Save conversation in database
+    # --------------------------------------------------
+    # 2. Save conversation in database
+    # --------------------------------------------------
+
     conversation = Conversation(
         conversation_type="call",
         filename=file.filename,
@@ -70,11 +76,45 @@ async def transcribe_call(
     db.commit()
     db.refresh(conversation)
 
+    # --------------------------------------------------
+    # 3. Create LangGraph State
+    # --------------------------------------------------
+
+    initial_state = {
+        "conversation_id": conversation.id,
+        "conversation_type": "call",
+        "filename": conversation.filename,
+        "transcript": conversation.transcript
+    }
+
+    # --------------------------------------------------
+    # 4. Run Sales AI Pipeline
+    # --------------------------------------------------
+
+    try:
+        result = sales_graph.invoke(initial_state)
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI pipeline failed: {str(exc)}"
+        )
+
+    # --------------------------------------------------
+    # 5. Return transcript + AI analysis
+    # --------------------------------------------------
+
     return {
         "success": True,
         "conversation_id": conversation.id,
         "conversation_type": "call",
         "filename": conversation.filename,
+
         "transcript": conversation.transcript,
+
+        "conversation_analysis": result.get(
+            "conversation_analysis"
+        ),
+
         "created_at": conversation.created_at
     }

@@ -1,11 +1,16 @@
 from langgraph.graph import StateGraph, START, END
 
 from backend.pipeline.state import SalesState
+from backend.Agents.sales_orchestrator import sales_orchestrator
+from backend.Agents.conversation_intelligence import conversation_intelligence
 
 
 def create_sales_graph():
 
     graph = StateGraph(SalesState)
+
+    graph.add_node("sales_orchestrator",sales_orchestrator)
+    graph.add_node("conversation_intelligence",conversation_intelligence)
 
     # Agents will be added here
     # graph.add_node("conversation_intelligence", ...)
@@ -14,7 +19,10 @@ def create_sales_graph():
     # graph.add_node("follow_up", ...)
     # graph.add_node("email", ...)
 
-    graph.add_edge(START, END)
+    
+    graph.add_edge(START, "sales_orchestrator")
+    graph.add_edge("sales_orchestrator", "conversation_intelligence")  
+    graph.add_edge("conversation_intelligence",END)
 
     return graph.compile()
 
