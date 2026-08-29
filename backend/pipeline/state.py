@@ -1,7 +1,7 @@
 from typing import TypedDict, Optional
 
 
-from typing import TypedDict, Optional
+
 
 
 class SalesState(TypedDict, total=False):

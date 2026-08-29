@@ -1,4 +1,11 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime
+)
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 
@@ -37,6 +44,23 @@ class Conversation(Base):
     transcript = Column(
         Text,
         nullable=False
+    )
+
+    # Generated email
+    email_subject = Column(
+        String(500),
+        nullable=True
+    )
+
+    email_body = Column(
+        Text,
+        nullable=True
+    )
+
+    # Human approval status
+    approval_status = Column(
+        String(50),
+        default="pending"
     )
 
     created_at = Column(
