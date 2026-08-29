@@ -1,5 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
+from langgraph.types import Command
+from backend.schema.conversation_schema import (EmailApprovalRequest,EmailEditRequest)
 
 from backend.service.transcription import transcribe_audio
 from backend.service.database import SessionLocal, Conversation
@@ -87,12 +89,17 @@ async def transcribe_call(
         "transcript": conversation.transcript
     }
 
-    
+    config = {
+    "configurable": {
+        "thread_id": str(conversation.id)
+    }
+}
+
     # 4. Run Sales AI Pipeline
 
 
     try:
-        result = sales_graph.invoke(initial_state)
+        result = sales_graph.invoke(initial_state,config=config)
 
     except Exception as exc:
         raise HTTPException(
@@ -142,3 +149,150 @@ async def transcribe_call(
 
     "created_at": conversation.created_at
 }
+
+@router.post("/{conversation_id}/approve")
+async def approve_email(
+    conversation_id: int,
+    request: EmailApprovalRequest,
+    db: Session = Depends(get_db)
+):
+
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id
+    ).first()
+
+    if not conversation:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found"
+        )
+
+    if request.action != "approve":
+        raise HTTPException(
+            status_code=400,
+            detail="Action must be approve"
+        )
+
+    config = {
+        "configurable": {
+            "thread_id": str(conversation_id)
+        }
+    }
+
+    result = sales_graph.invoke(
+        Command(
+            resume={
+                "action": "approve"
+            }
+        ),
+        config=config
+    )
+
+    conversation.approval_status = "approved"
+
+    db.commit()
+
+    return {
+        "success": True,
+        "conversation_id": conversation_id,
+        "approval_status": "approved",
+        "message": "Email approved successfully.",
+        "result": result
+    } 
+
+@router.post("/{conversation_id}/edit")
+async def edit_email(
+    conversation_id: int,
+    request: EmailEditRequest,
+    db: Session = Depends(get_db)
+):
+
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id
+    ).first()
+
+    if not conversation:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found"
+        )
+
+    config = {
+        "configurable": {
+            "thread_id": str(conversation_id)
+        }
+    }
+
+    edited_email = {
+        "subject": request.subject,
+        "body": request.body
+    }
+
+    result = sales_graph.invoke(
+        Command(
+            resume={
+                "action": "edit",
+                "email": edited_email
+            }
+        ),
+        config=config
+    )
+
+    conversation.email_subject = request.subject
+    conversation.email_body = request.body
+    conversation.approval_status = "edited"
+
+    db.commit()
+
+    return {
+        "success": True,
+        "conversation_id": conversation_id,
+        "approval_status": "edited",
+        "email": edited_email,
+        "message": "Email edited successfully.",
+        "result": result
+    }
+
+
+@router.post("/{conversation_id}/reject")
+async def reject_email(
+    conversation_id: int,
+    db: Session = Depends(get_db)
+):
+
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id
+    ).first()
+
+    if not conversation:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found"
+        )
+
+    config = {
+        "configurable": {
+            "thread_id": str(conversation_id)
+        }
+    }
+
+    result = sales_graph.invoke(
+        Command(
+            resume={
+                "action": "reject"
+            }
+        ),
+        config=config
+    )
+
+    conversation.approval_status = "rejected"
+
+    db.commit()
+
+    return {
+        "success": True,
+        "conversation_id": conversation_id,
+        "approval_status": "rejected",
+        "message": "Email rejected. It will not be sent.",
+        "result": result
+    }

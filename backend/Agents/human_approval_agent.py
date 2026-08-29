@@ -7,8 +7,12 @@ def human_approval(state: SalesState) -> SalesState:
     """
     Human-in-the-Loop approval node.
 
-    Pauses the LangGraph pipeline after email generation
-    and waits for human approval.
+    Pauses the graph and waits for human decision.
+
+    Actions:
+    - approve → email can be sent
+    - edit    → edited email can be sent
+    - reject  → email will not be sent
     """
 
     email = state.get("email")
@@ -18,6 +22,7 @@ def human_approval(state: SalesState) -> SalesState:
             "Email is required for human approval"
         )
 
+    # Pause the graph and wait for human decision
     approval = interrupt({
         "message": "Please review the generated email.",
         "email": email,
@@ -27,9 +32,86 @@ def human_approval(state: SalesState) -> SalesState:
         "follow_up": state.get("follow_up")
     })
 
-    # Human's response will be supplied when the graph resumes
-    state["human_approval"] = approval
+    if not isinstance(approval, dict):
+        raise ValueError(
+            "Invalid human approval response"
+        )
 
-    state["pipeline_status"] = "human_approval_completed"
+    action = approval.get("action")
 
-    return state
+   
+    # Approve
+
+    if action == "approve":
+
+        state["human_approval"] = "approved"
+
+        state["approval_status"] = "approved"
+
+        state["pipeline_status"] = "email_approved"
+
+        return state
+
+    
+    # Edit
+
+    elif action == "edit":
+
+        edited_email = approval.get("email")
+
+        if not edited_email:
+            raise ValueError(
+                "Edited email is required"
+            )
+
+        if not isinstance(edited_email, dict):
+            raise ValueError(
+                "Edited email must be an object"
+            )
+
+        if not edited_email.get("subject"):
+            raise ValueError(
+                "Edited email subject is required"
+            )
+
+        if not edited_email.get("body"):
+            raise ValueError(
+                "Edited email body is required"
+            )
+
+        # Replace generated email with edited email
+        state["email"] = {
+            "subject": edited_email["subject"],
+            "body": edited_email["body"]
+        }
+
+        state["human_approval"] = "edited"
+
+        state["approval_status"] = "edited"
+
+        state["pipeline_status"] = "email_edited"
+
+        return state
+
+    
+    # REJECT
+    
+
+    elif action == "reject":
+
+        state["human_approval"] = "rejected"
+
+        state["approval_status"] = "rejected"
+
+        state["pipeline_status"] = "email_rejected"
+
+        return state
+
+    # INVALID ACTION
+    
+
+    else:
+
+        raise ValueError(
+            "Invalid action. Use approve, edit, or reject."
+        )

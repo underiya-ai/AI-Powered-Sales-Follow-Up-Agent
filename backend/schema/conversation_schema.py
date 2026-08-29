@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from datetime import datetime
+from typing import Literal
 
 
-class ConversationResponse(BaseModel):
-    success: bool
-    conversation_id: int
-    conversation_type: str
-    filename: str
-    transcript: str
-    created_at: datetime
+class EmailApprovalRequest(BaseModel):
+    action: Literal["approve", "reject"]
+
+
+class EmailEditRequest(BaseModel):
+    subject: str
+    body: str 

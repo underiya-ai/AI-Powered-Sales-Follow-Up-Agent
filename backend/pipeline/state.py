@@ -31,6 +31,7 @@ class SalesState(TypedDict, total=False):
 
     # Human Approval
     human_approval: Optional[dict]
+    approval_status: Optional[str]
 
     # Pipeline
     sales_goal: Optional[str]
