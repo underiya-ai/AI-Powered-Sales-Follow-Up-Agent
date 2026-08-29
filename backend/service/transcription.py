@@ -6,7 +6,7 @@ import os
 
 # Load Whisper model only once when the application starts
 model = WhisperModel(
-    "small",
+    "base",
     device="cpu",
     compute_type="int8"
 )
@@ -50,4 +50,3 @@ async def transcribe_audio(file: UploadFile) -> str:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
-            
