@@ -50,9 +50,9 @@ async def transcribe_call(
             detail="Unsupported audio format"
         )
 
-    # --------------------------------------------------
+
     # 1. Speech-to-Text
-    # --------------------------------------------------
+    
 
     transcript = await transcribe_audio(file)
 
@@ -62,9 +62,9 @@ async def transcribe_call(
             detail="Could not generate transcript"
         )
 
-    # --------------------------------------------------
+    
     # 2. Save conversation in database
-    # --------------------------------------------------
+    
 
     conversation = Conversation(
         conversation_type="call",
@@ -76,9 +76,9 @@ async def transcribe_call(
     db.commit()
     db.refresh(conversation)
 
-    # --------------------------------------------------
+
     # 3. Create LangGraph State
-    # --------------------------------------------------
+    
 
     initial_state = {
         "conversation_id": conversation.id,
@@ -87,9 +87,9 @@ async def transcribe_call(
         "transcript": conversation.transcript
     }
 
-    # --------------------------------------------------
+    
     # 4. Run Sales AI Pipeline
-    # --------------------------------------------------
+
 
     try:
         result = sales_graph.invoke(initial_state)
@@ -100,21 +100,33 @@ async def transcribe_call(
             detail=f"AI pipeline failed: {str(exc)}"
         )
 
-    # --------------------------------------------------
+    
     # 5. Return transcript + AI analysis
-    # --------------------------------------------------
+    
 
     return {
-        "success": True,
-        "conversation_id": conversation.id,
-        "conversation_type": "call",
-        "filename": conversation.filename,
+    "success": True,
+    "conversation_id": conversation.id,
+    "conversation_type": "call",
+    "filename": conversation.filename,
 
-        "transcript": conversation.transcript,
+    "transcript": conversation.transcript,
 
-        "conversation_analysis": result.get(
-            "conversation_analysis"
-        ),
+    "conversation_analysis": result.get(
+        "conversation_analysis"
+    ),
 
-        "created_at": conversation.created_at
-    }
+    "lead_score": result.get(
+        "lead_score"
+    ),
+
+    "lead_priority": result.get(
+        "lead_priority"
+    ),
+
+    "lead_scoring_reason": result.get(
+        "lead_scoring_reason"
+    ),
+
+    "created_at": conversation.created_at
+}
