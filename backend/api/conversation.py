@@ -50,7 +50,7 @@ async def transcribe_call(
             detail="Unsupported audio format"
         )
 
-    # Step 1: Convert audio to text
+    # Convert audio to text
     transcript = await transcribe_audio(file)
 
     if not transcript:
@@ -59,7 +59,7 @@ async def transcribe_call(
             detail="Could not generate transcript"
         )
 
-    # Step 2: Save conversation in database
+    #  Save conversation in database
     conversation = Conversation(
         conversation_type="call",
         filename=file.filename,
