@@ -128,5 +128,9 @@ async def transcribe_call(
         "lead_scoring_reason"
     ),
 
+    "next_best_action": result.get(
+        "next_best_action"
+    ),
+
     "created_at": conversation.created_at
 }
