@@ -2,9 +2,8 @@ import { useState } from "react";
 import "./App.css";
 import { mascotImg, laptopGirlImg, headphonesBoyImg, heroMascotImg } from "./assets";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  "http://127.0.0.1:8000/api/v1/conversations";
-
+const API_BASE_URL = `${import.meta.env.VITE_API_URL || 
+  "http://127.0.0.1:8000/"}api/v1/conversations`;
 /* 
    ICONS (inline SVG, no external deps)
  */
@@ -656,7 +655,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/${conversationId}/edit`,
+        `${API_BASE_URL}/api/v1${conversationId}/edit`,
         {
           method: "POST",
           headers: {
@@ -716,7 +715,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/${conversationId}/reject`,
+        `${API_BASE_URL}/api/v1/conversations/${conversationId}/reject`,
         {
           method: "POST",
         }
