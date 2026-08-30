@@ -14,36 +14,26 @@ from backend.Agents.human_approval_agent import human_approval
 from backend.service.gmail_service import send_email as gmail_send_email
 
 
-# ==================================================
-# PHASE 1
-# WAIT FOR CUSTOMER EMAIL
-# ==================================================
-
 def wait_for_customer_email(state: SalesState) -> SalesState:
-    """
-    First phase ends here.
-
-    Customer email will be provided later
-    through the /generate-email endpoint.
-    """
 
     state["pipeline_status"] = "waiting_for_customer_email"
 
     return state
 
 
-# ==================================================
-# APPROVAL ROUTER
-# ==================================================
 
 def approval_router(state: SalesState):
 
     approval_status = state.get("approval_status")
 
-    if approval_status in {"approved", "edited"}:
+    if approval_status == "approved":
         return "send_email"
 
     if approval_status == "rejected":
+        return END
+
+    # Edited email ko send nahi karna
+    if approval_status == "edited":
         return END
 
     raise ValueError(
@@ -51,14 +41,7 @@ def approval_router(state: SalesState):
     )
 
 
-# ==================================================
-# SEND EMAIL
-# ==================================================
-
 def send_email(state: SalesState) -> SalesState:
-    """
-    Sends the approved email using Gmail OAuth.
-    """
 
     email = state.get("email")
     customer_email = state.get("customer_email")
@@ -81,7 +64,6 @@ def send_email(state: SalesState) -> SalesState:
             "Email subject and body are required"
         )
 
-    # Send email using Gmail API
     result = gmail_send_email(
         to_email=customer_email,
         subject=subject,
@@ -99,23 +81,22 @@ def send_email(state: SalesState) -> SalesState:
     return state
 
 
-# ==================================================
-# CREATE SALES GRAPH
-# ==================================================
+
 
 def create_sales_graph():
 
     graph = StateGraph(SalesState)
 
-    # ----------------------------------------------
-    # Nodes
-    # ----------------------------------------------
+
 
     graph.add_node(
         "sales_orchestrator",
         sales_orchestrator
     )
-
+    graph.add_node(
+    "wait_for_customer_email",
+    wait_for_customer_email
+)
     graph.add_node(
         "conversation_intelligence",
         conversation_intelligence
@@ -137,13 +118,21 @@ def create_sales_graph():
     )
 
     graph.add_node(
-        "wait_for_customer_email",
-        wait_for_customer_email
+        "email_agent",
+        email_agent
     )
 
-    # ----------------------------------------------
-    # Phase 1 edges
-    # ----------------------------------------------
+    graph.add_node(
+        "human_approval",
+        human_approval
+    )
+
+    graph.add_node(
+        "send_email",
+        send_email
+    )
+
+ 
 
     graph.add_edge(
         START,
@@ -170,6 +159,7 @@ def create_sales_graph():
         "follow_up_agent"
     )
 
+
     graph.add_edge(
         "follow_up_agent",
         "wait_for_customer_email"
@@ -180,9 +170,7 @@ def create_sales_graph():
         END
     )
 
-    # ----------------------------------------------
-    # Checkpointer
-    # ----------------------------------------------
+   
 
     checkpointer = MemorySaver()
 
@@ -191,17 +179,9 @@ def create_sales_graph():
     )
 
 
-# ==================================================
-# CREATE EMAIL GRAPH
-# ==================================================
-
 def create_email_graph():
 
     graph = StateGraph(SalesState)
-
-    # ----------------------------------------------
-    # Nodes
-    # ----------------------------------------------
 
     graph.add_node(
         "email_agent",
@@ -218,24 +198,19 @@ def create_email_graph():
         send_email
     )
 
-    # ----------------------------------------------
-    # Phase 2 edges
-    # ----------------------------------------------
-
+    # START
     graph.add_edge(
         START,
         "email_agent"
     )
 
+    # Email generation
     graph.add_edge(
         "email_agent",
         "human_approval"
     )
 
-    # ----------------------------------------------
-    # Human Approval Routing
-    # ----------------------------------------------
-
+    # Approval routing
     graph.add_conditional_edges(
         "human_approval",
         approval_router,
@@ -245,18 +220,11 @@ def create_email_graph():
         }
     )
 
-    # ----------------------------------------------
-    # Send Email
-    # ----------------------------------------------
-
+    # Send email
     graph.add_edge(
         "send_email",
         END
     )
-
-    # ----------------------------------------------
-    # Checkpointer
-    # ----------------------------------------------
 
     checkpointer = MemorySaver()
 
@@ -265,9 +233,6 @@ def create_email_graph():
     )
 
 
-# ==================================================
-# GLOBAL GRAPHS
-# ==================================================
 
 sales_graph = create_sales_graph()
 

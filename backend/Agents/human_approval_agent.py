@@ -7,12 +7,10 @@ def human_approval(state: SalesState) -> SalesState:
     """
     Human-in-the-Loop approval node.
 
-    Pauses the graph and waits for human decision.
-
     Actions:
-    - approve → email can be sent
-    - edit    → edited email can be sent
-    - reject  → email will not be sent
+    - approve → current email will be sent
+    - edit    → email will be updated but NOT sent
+    - reject  → email will NOT be sent
     """
 
     email = state.get("email")
@@ -22,7 +20,10 @@ def human_approval(state: SalesState) -> SalesState:
             "Email is required for human approval"
         )
 
-    # Pause the graph and wait for human decision
+    # --------------------------------------------------
+    # WAIT FOR HUMAN DECISION
+    # --------------------------------------------------
+
     approval = interrupt({
         "message": "Please review the generated email.",
         "email": email,
@@ -39,21 +40,46 @@ def human_approval(state: SalesState) -> SalesState:
 
     action = approval.get("action")
 
-   
-    # Approve
+    # --------------------------------------------------
+    # APPROVE
+    # --------------------------------------------------
 
     if action == "approve":
 
+        # If an updated email is provided, use it.
+        approved_email = approval.get("email")
+
+        if approved_email:
+
+            if not isinstance(approved_email, dict):
+                raise ValueError(
+                    "Approved email must be an object"
+                )
+
+            if not approved_email.get("subject"):
+                raise ValueError(
+                    "Approved email subject is required"
+                )
+
+            if not approved_email.get("body"):
+                raise ValueError(
+                    "Approved email body is required"
+                )
+
+            state["email"] = {
+                "subject": approved_email["subject"],
+                "body": approved_email["body"]
+            }
+
         state["human_approval"] = "approved"
-
         state["approval_status"] = "approved"
-
         state["pipeline_status"] = "email_approved"
 
         return state
 
-    
-    # Edit
+    # --------------------------------------------------
+    # EDIT
+    # --------------------------------------------------
 
     elif action == "edit":
 
@@ -79,7 +105,8 @@ def human_approval(state: SalesState) -> SalesState:
                 "Edited email body is required"
             )
 
-        # Replace generated email with edited email
+        # Update email in graph state
+        # IMPORTANT: DO NOT SEND EMAIL HERE.
         state["email"] = {
             "subject": edited_email["subject"],
             "body": edited_email["body"]
@@ -87,15 +114,17 @@ def human_approval(state: SalesState) -> SalesState:
 
         state["human_approval"] = "edited"
 
+        # Keep status as edited.
+        # Router should NOT send on edit.
         state["approval_status"] = "edited"
 
         state["pipeline_status"] = "email_edited"
 
         return state
 
-    
+    # --------------------------------------------------
     # REJECT
-    
+    # --------------------------------------------------
 
     elif action == "reject":
 
@@ -107,8 +136,9 @@ def human_approval(state: SalesState) -> SalesState:
 
         return state
 
+    # --------------------------------------------------
     # INVALID ACTION
-    
+    # --------------------------------------------------
 
     else:
 

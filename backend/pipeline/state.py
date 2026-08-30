@@ -1,39 +1,29 @@
-from typing import TypedDict, Optional
-
-
-
+from typing import TypedDict
 
 
 class SalesState(TypedDict, total=False):
 
-    # Conversation
     conversation_id: int
     conversation_type: str
     filename: str
     transcript: str
 
-    # Conversation Intelligence
-    conversation_analysis: Optional[dict]
-
-    # Lead Scoring
-    lead_score: Optional[int]
-    lead_priority: Optional[str]
-    lead_scoring_reason: Optional[str]
-
-    # Next Best Action
-    next_best_action: Optional[dict]
-
-    # Follow-Up
-    follow_up: Optional[dict]
-
-    # Email
-    email: Optional[dict]
     customer_email: str
 
-    # Human Approval
-    human_approval: Optional[dict]
-    approval_status: Optional[str]
+    conversation_analysis: dict
 
-    # Pipeline
-    sales_goal: Optional[str]
-    pipeline_status: Optional[str]
+    lead_score: int
+    lead_priority: str
+    lead_scoring_reason: str
+
+    next_best_action: dict
+    follow_up: dict
+
+    email: dict
+
+    approval_status: str
+    human_approval: dict
+
+    email_send_result: dict
+
+    pipeline_status: str
