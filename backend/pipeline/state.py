@@ -28,6 +28,7 @@ class SalesState(TypedDict, total=False):
 
     # Email
     email: Optional[dict]
+    customer_email: str
 
     # Human Approval
     human_approval: Optional[dict]

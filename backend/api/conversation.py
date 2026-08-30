@@ -1,11 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from langgraph.types import Command
-from backend.schema.conversation_schema import (EmailApprovalRequest,EmailEditRequest)
+from backend.schema.conversation_schema import (EmailApprovalRequest,EmailEditRequest,CustomerEmailRequest)
 
 from backend.service.transcription import transcribe_audio
 from backend.service.database import SessionLocal, Conversation
-from backend.pipeline.graph import sales_graph
+from backend.pipeline.graph import (sales_graph,email_graph)
+
 
 
 router = APIRouter(
@@ -150,6 +151,88 @@ async def transcribe_call(
     "created_at": conversation.created_at
 }
 
+@router.post("/{conversation_id}/generate-email")
+async def generate_email(
+    conversation_id: int,
+    request: CustomerEmailRequest,
+    db: Session = Depends(get_db)
+):
+
+    conversation = db.query(Conversation).filter(
+        Conversation.id == conversation_id
+    ).first()
+
+    if not conversation:
+        raise HTTPException(
+            status_code=404,
+            detail="Conversation not found"
+        )
+
+    config = {
+        "configurable": {
+            "thread_id": str(conversation_id)
+        }
+    }
+
+    try:
+
+        # Get state saved by the first graph
+        checkpoint = sales_graph.get_state(config)
+
+        if not checkpoint or not checkpoint.values:
+            raise HTTPException(
+                status_code=400,
+                detail="Conversation pipeline state not found"
+            )
+
+        state = dict(checkpoint.values)
+
+        # Add customer email
+        state["customer_email"] = str(
+            request.customer_email
+        )
+
+        # Run Email Agent graph
+        result = email_graph.invoke(
+            state,
+            config=config
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Email generation failed: {str(exc)}"
+        )
+
+    return {
+        "success": True,
+        "conversation_id": conversation_id,
+        "customer_email": request.customer_email,
+
+        "email": result.get(
+            "email"
+        ),
+
+        "lead_score": result.get(
+            "lead_score"
+        ),
+
+        "lead_priority": result.get(
+            "lead_priority"
+        ),
+
+        "next_best_action": result.get(
+            "next_best_action"
+        ),
+
+        "follow_up": result.get(
+            "follow_up"
+        )
+    }
+
 @router.post("/{conversation_id}/approve")
 async def approve_email(
     conversation_id: int,
@@ -179,7 +262,7 @@ async def approve_email(
         }
     }
 
-    result = sales_graph.invoke(
+    result = email_graph.invoke(
         Command(
             resume={
                 "action": "approve"
@@ -198,7 +281,8 @@ async def approve_email(
         "approval_status": "approved",
         "message": "Email approved successfully.",
         "result": result
-    } 
+    }
+
 
 @router.post("/{conversation_id}/edit")
 async def edit_email(
@@ -228,7 +312,7 @@ async def edit_email(
         "body": request.body
     }
 
-    result = sales_graph.invoke(
+    result = email_graph.invoke(
         Command(
             resume={
                 "action": "edit",
@@ -276,7 +360,7 @@ async def reject_email(
         }
     }
 
-    result = sales_graph.invoke(
+    result = email_graph.invoke(
         Command(
             resume={
                 "action": "reject"

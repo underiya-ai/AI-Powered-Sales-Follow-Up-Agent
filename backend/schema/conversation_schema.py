@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,EmailStr
 from typing import Literal
 
 
@@ -9,3 +9,9 @@ class EmailApprovalRequest(BaseModel):
 class EmailEditRequest(BaseModel):
     subject: str
     body: str 
+
+
+
+
+class CustomerEmailRequest(BaseModel):
+    customer_email: EmailStr

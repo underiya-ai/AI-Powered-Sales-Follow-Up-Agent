@@ -13,3 +13,7 @@ langchain-google-genai
 langchain-groq
 faster-whisper
 sqlalchemy
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+email-validatory
