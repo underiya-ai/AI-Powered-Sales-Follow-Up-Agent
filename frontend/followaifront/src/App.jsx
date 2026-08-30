@@ -655,7 +655,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1${conversationId}/edit`,
+        `${API_BASE_URL}/${conversationId}/edit`,
         {
           method: "POST",
           headers: {
@@ -715,7 +715,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/conversations/${conversationId}/reject`,
+        `${API_BASE_URL}/${conversationId}/reject`,
         {
           method: "POST",
         }
